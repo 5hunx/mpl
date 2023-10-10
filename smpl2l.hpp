@@ -58,6 +58,10 @@ public:
 	mp& operator<<=(unsigned K);
 	mp operator<<(const unsigned K);
 
+	mp& operator>>=(unsigned K);
+	mp operator>>(const unsigned K);
+
+
 	mp& operator*=(const unsigned long long K);
 	mp operator*(const unsigned long long K) const;
 
@@ -93,11 +97,19 @@ public:
 	} data = {0};
 	bool negative = false;
 
+	unsigned long getBitSize();
+
+
    private:
+	inline uint32_t findFirst1();
 
 	void mult32(uint32_t K);
-	inline void step32();
-	inline void step64(uint16_t n);
+
+	inline void stepL32(uint16_t n);
+	inline void stepL64(uint16_t n);
+
+	inline void stepR32(uint16_t n);
+	inline void stepR64(uint16_t n);
 	
 	double div32(const uint32_t K, const int32_t index);
 	
@@ -108,12 +120,12 @@ public:
 	void initfromMPI(const mp& K);
 
 
-	// void debugOut(std::string K, int l = 0) {
-	// 	for(int i = 0; i < l; i++) std::cout << ' ';
-	// 	std::cout << K << '\n';
-	// 	for(int i = 0; i < l; i++) std::cout << ' ';
-	// 	std::cout << getBinString() << '\n';
-	// };
+	void debugOut(std::string K, int l = 0) {
+		for(int i = 0; i < l; i++) std::cout << ' ';
+		std::cout << K << '\n';
+		for(int i = 0; i < l; i++) std::cout << ' ';
+		std::cout << getBinString() << '\n';
+	};
 };
 
 
@@ -141,6 +153,3 @@ void mp::initfromMPI(const mp& K) {
 		data.B[i] = K.data.B[i];
 	}
 }
-
-
-
