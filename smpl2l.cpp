@@ -1,6 +1,7 @@
 #include <string>
 #include <bitset>
-
+#include <intrin.h>
+#pragma intrinsic(_BitScanForward64)
 
 #include "smpl2l.hpp"
 
@@ -81,7 +82,7 @@ bool mp::operator>(const unsigned long long K) const {
 	return false;
 }
 bool mp::operator<(const unsigned long long K) const {
-	if(data.B[0] > K) return false;
+	if(data.B[0] >= K) return false;
 	for(int i = 1; i < BUFFER; i++) {
 		if(data.B[i] != 0) return false;
 	}
@@ -99,6 +100,14 @@ bool mp::operator<(const mp& K) const {
 		if(data.B[i] < K.data.B[i]) return true;
 	}
 	return false;
+}
+
+unsigned long mp::getBitSize() {
+	uint8_t index = BUFFER - 1, pos = 0;
+	while(index < BUFFER && data.B[index] == 0) index--;
+	for(unsigned long long m = 1ULL << (64 - 1); m > 0 && !(m & data.B[index]); m /= 2) pos++;
+	
+	return (index + 1) * 64 - pos;
 }
 
 
@@ -137,11 +146,13 @@ void mp::clear() {
 
 mp& mp::operator<<=(const unsigned K) {
 	uint_fast32_t G = K;
-	if(G >= 64) {
+	if(K % 32 == 0 && K % 64 != 0) {
+		stepL32(K / 32);
+	} else if(G >= 64) {
 		uint_fast16_t counter = 0;
 		for(; G >= 64; G -= 64) counter++;
-		step64(counter);
-	}  // Hiernach ist K%64 also maximal 63
+		stepL64(counter);
+	}
 
 	// ka ob ich das brauch
 	if(G != 0) {
@@ -168,6 +179,40 @@ mp mp::operator<<(const unsigned K) {
 	return out;
 }
 
+mp& mp::operator>>=(const unsigned K) {
+	uint_fast32_t G = K;
+	if(K % 32 == 0 && K % 64 != 0) {
+		stepR32(K / 32);
+	} else if(G >= 64) {
+		uint_fast16_t counter = 0;
+		for(; G >= 64; G -= 64) counter++;
+		stepR64(counter);
+	}
+
+	// du brauchst das, ist viel schneller
+	if(G != 0) {
+		const unsigned offset = 64 - G;
+		uint_fast64_t buff, buff_old = 0;
+		for(int i = BUFFER; i >= 0; i--) {  // evtl opti wenn BUFFER-1 und lastcase hinter for
+			if(data.B[i] == 0 && buff_old == 0) {		   // die mit den nullen muss ich ja nicht ändern
+				buff_old = 0;
+				continue;
+			}
+			buff = data.B[i] << offset;
+			data.B[i] >>= G;
+			data.B[i] |= buff_old;
+			buff_old = buff;
+		}
+	}
+
+	return *this;
+}
+mp mp::operator>>(const unsigned K) {
+	mp out(*this);
+	out >>= K;
+	return out;
+}
+
 
 mp& mp::operator*=(const unsigned long long K) {
 	// check self == 0
@@ -182,6 +227,11 @@ mp& mp::operator*=(const unsigned long long K) {
 		uint32_t S[2];
 	} vals = {K};
 
+	std::cout << K << '\n';
+	std::cout << std::bitset<64>(K) << '\n';
+	debugOut("before Mult");
+
+
 
 	if(vals.S[1] == 0) {  // for u32 faster
 		mult32(vals.S[0]);
@@ -193,23 +243,43 @@ mp& mp::operator*=(const unsigned long long K) {
 	mp temp(*this);
     mult32(vals.S[0]);
 	temp.mult32(vals.S[1]);
-	temp.step32();
+	temp.stepL32(1);
 	
     // EVTL NICHT alle sondern nur die bis jetzt beschriebenen ändern
 	// temp<<=32;
 
 	operator+=(temp);
 
+	debugOut("After Mult");
+
 	return *this;
 }
 
+inline uint32_t mp::findFirst1() {
+	unsigned long out = 0;
+	for(int i = 0; i < BUFFER; i++) {
+		if(data.B[i] != 0) {
+			_BitScanForward64(&out, data.B[i]);
+			break;
+		}
+		out += 64;
+	}
+
+	return out;
+}
+
 void mp::mult32(uint32_t K) {
+	
+	std::cout << K << '\n';
+	std::cout << std::bitset<32>(K) << '\n';
+	debugOut("mult32", 4);
 	uint16_t shift = 0;
 	while(K % 2 == 0) {
 		shift++;
 		K /= 2;
 	}
 	if(shift != 0) operator<<=(shift);
+	debugOut("After shift", 4);
 
 
 
@@ -229,20 +299,43 @@ void mp::mult32(uint32_t K) {
 		data.M[BUFFER * 2 - 1] *= K;
         operator+=(adder);
 	}
+	debugOut("after mult32");
 }
 
-void mp::step32() {
+void mp::stepL32(uint16_t n) {
 	uint_fast16_t upper = BUFFER * 2;
 	// clang-format off
 	for(; upper > 0 && data.M[upper] != 0; upper--);
 	// clang-format on
-	for(int i = upper + 1; i > 0; i--) {
-		data.M[i] = data.M[i - 1];
+	for(int i = upper + 1; i >= n; i--) {
+		data.M[i] = data.M[i - n];
 	}
-	data.M[0] = 0;
+	for(int i = 0; i < n; i++) data.M[0] = 0;
 }
 
-void mp::step64(uint16_t n) {
+void mp::stepL64(uint16_t n) {
+	uint_fast16_t upper = BUFFER;
+    // clang-format off
+	for(; upper > 0 && data.B[upper] != 0; upper--);
+    // clang-format on
+	for(int i = upper + 1; i >= n; i--) {
+		data.B[i] = data.B[i - n];
+	}
+	for(int i = 0; i < n; i++) data.B[i] = 0;
+}
+
+void mp::stepR32(uint16_t n) {
+	uint_fast16_t upper = BUFFER * 2;
+	// clang-format off
+	for(; upper > 0 && data.M[upper] == 0; upper--);
+	// clang-format on
+	for(int i = n; i < upper; i++) {
+		data.M[i] = data.M[i + n];
+	}
+	for(int i = upper; i < upper + n; i++) data.M[0] = 0;
+}
+
+void mp::stepR64(uint16_t n) {
 	uint_fast16_t upper = BUFFER;
     // clang-format off
 	for(; upper > 0 && data.B[upper] != 0; upper--);
@@ -285,7 +378,7 @@ mp& mp::operator*=(const mp& K) {
 	for(int i = 1; i < BUFFER; i++) {
 		if(K.data.B[i] == 0) continue;
 		temp = *this;
-		temp.step64(i);
+		temp.stepL64(i);
 		temp *= K.data.B[i];
 		adder += temp;
 	}
@@ -327,19 +420,18 @@ void incExpDouble(double &K, uint16_t val) {
 // DIVISION
 
 double mp::div32(const uint32_t K, const int32_t index) {
-    double out, S;
-    DoubleFucker* b = reinterpret_cast<DoubleFucker*>(&S);
     const double D = (double)K;
-    for(int i = 0; i < BUFFER*2; i++) {
+    double S = 0;
+
+	for(int i = 0; i < BUFFER*2; i++) {
         if(data.M[i] == 0) continue;
-        S = data.M[i] / D;
-        b->exponent += (i - index) * 32;
-        out += S;
-    }
-    return out;
+        S += data.M[i] / D;
+	}
+
+	return S;
 }
 
-
+// inline uint16_t getPos
 
 mp& mp::operator/=(const unsigned long long K) {
     if(operator<(K)) {
@@ -349,6 +441,19 @@ mp& mp::operator/=(const unsigned long long K) {
     if(K == 0) {
         // ja bro was soll das
     }
+
+	union {
+		uint64_t B;
+		uint64_t S[2];
+	};
+	
+
+	// bitshift magic here
+
+
+	if(S[0]) {
+		
+	}
 
     for(int i = 0; i < BUFFER*2; i++) {
         
