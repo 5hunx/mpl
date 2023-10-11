@@ -24,6 +24,9 @@ typedef struct {
 class mp {
 public:
 	mp() {};
+	mp(const int K) { // less "ambiguous" for compiler 
+		initfromU64(K);
+	};
 	mp(const unsigned long long K) {
 		initfromU64(K);
 	};
@@ -49,11 +52,11 @@ public:
 	mp& operator+=(const mp& K);
 	mp operator+(const mp& K) const;
 
-	// mp& operator-=(const unsigned long long K);
-	// mp operator-(const unsigned long long K);
+	mp& operator-=(const unsigned long long K);
+	mp operator-(const unsigned long long K);
 
-	// mp& operator-=(const mp& K);
-	// mp operator-(const mp& K);
+	mp& operator-=(const mp& K);
+	mp operator-(const mp& K);
 
 	mp& operator<<=(unsigned K);
 	mp operator<<(const unsigned K);
@@ -95,12 +98,13 @@ public:
 		uint32_t M[BUFFER * 2];
 		// uint32_t S[BUFFER*4];
 	} data = {0};
-	bool negative = false;
+	// bool negative = false; // ist erstmal nur unsigned irgendwo ist auch schluss 
+	// sollte aber wenn ich fertig bin einfach sein zu implementieren
 
 	unsigned long getBitSize();
 
 
-   private:
+private:
 	inline uint32_t findFirst1();
 
 	void mult32(uint32_t K);

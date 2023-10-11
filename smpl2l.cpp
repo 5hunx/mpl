@@ -45,6 +45,45 @@ mp mp::operator+(const unsigned long long K) const {
 	return out;
 }
 
+mp& mp::operator-=(const unsigned long long K) {
+	if(data.B[0] < K) {
+		int big_index = 1;
+		for(; big_index < BUFFER && data.B[big_index] == 0; big_index++) {
+			data.B[big_index] = UINT64_MAX;
+		}
+		data.B[big_index]--;
+	} 
+	data.B[0] -= K;
+
+	return *this;
+}
+mp mp::operator-(const unsigned long long K) {
+	mp out(*this);
+	out -= K;
+	return out;
+}
+
+mp& mp::operator-=(const mp& K) {
+	for(int i = 0; i < BUFFER; i++) {
+		if(data.B[i] < K.data.B[i]) {
+			int big_index = i + 1;
+			for(; big_index < BUFFER && data.B[big_index] == 0; big_index++) {
+				data.B[big_index] = UINT64_MAX;
+			}
+			data.B[big_index]--;
+		} 
+		data.B[i] -= K.data.B[i];
+	}
+
+	return *this;
+}
+
+mp mp::operator-(const mp& K) {
+	mp out(*this);
+	out -= K;
+	return out;
+}
+
 // void mp::printBin() {
 // 	for(int i = 0; i < BUFFER; i++) std::cout << data[i] << " ";
 // 	std::cout << ":\n";
@@ -148,6 +187,7 @@ mp& mp::operator<<=(const unsigned K) {
 	uint_fast32_t G = K;
 	if(K % 32 == 0 && K % 64 != 0) {
 		stepL32(K / 32);
+		return *this;
 	} else if(G >= 64) {
 		uint_fast16_t counter = 0;
 		for(; G >= 64; G -= 64) counter++;
@@ -183,6 +223,7 @@ mp& mp::operator>>=(const unsigned K) {
 	uint_fast32_t G = K;
 	if(K % 32 == 0 && K % 64 != 0) {
 		stepR32(K / 32);
+		return *this;
 	} else if(G >= 64) {
 		uint_fast16_t counter = 0;
 		for(; G >= 64; G -= 64) counter++;
@@ -303,19 +344,31 @@ void mp::mult32(uint32_t K) {
 }
 
 void mp::stepL32(uint16_t n) {
-	uint_fast16_t upper = BUFFER * 2;
+	uint_fast16_t upper = BUFFER * 2 - 1;
+
+	if(n >= upper) {
+		clear();
+		return;
+	}
+
 	// clang-format off
 	for(; upper > 0 && data.M[upper] != 0; upper--);
 	// clang-format on
 	for(int i = upper + 1; i >= n; i--) {
 		data.M[i] = data.M[i - n];
 	}
-	for(int i = 0; i < n; i++) data.M[0] = 0;
+	for(int i = 0; i < n; i++) data.M[i] = 0;
 }
 
 void mp::stepL64(uint16_t n) {
-	uint_fast16_t upper = BUFFER;
-    // clang-format off
+	uint_fast16_t upper = BUFFER - 1;
+    
+	if(n >= upper) {
+		clear();
+		return;
+	}
+
+	// clang-format off
 	for(; upper > 0 && data.B[upper] != 0; upper--);
     // clang-format on
 	for(int i = upper + 1; i >= n; i--) {
@@ -325,27 +378,36 @@ void mp::stepL64(uint16_t n) {
 }
 
 void mp::stepR32(uint16_t n) {
-	uint_fast16_t upper = BUFFER * 2;
+	uint_fast16_t upper = BUFFER * 2 - 1;
 	// clang-format off
 	for(; upper > 0 && data.M[upper] == 0; upper--);
 	// clang-format on
-	for(int i = n; i < upper; i++) {
+	if(upper < n) {
+		// wir deleten einfach; Garkein problem bruder;
+		for(int i = 0; i <= upper; i++) data.M[i] = 0;
+		return;
+	}
+	for(int i = 0; i <= upper - n; i++) {
 		data.M[i] = data.M[i + n];
 	}
-	for(int i = upper; i < upper + n; i++) data.M[0] = 0;
+	for(int i = upper - n + 1; i <= upper; i++) data.M[i] = 0;
 }
 
 void mp::stepR64(uint16_t n) {
-	uint_fast16_t upper = BUFFER;
-    // clang-format off
-	for(; upper > 0 && data.B[upper] != 0; upper--);
-    // clang-format on
-	for(int i = upper + 1; i >= n; i--) {
-		data.B[i] = data.B[i - n];
+	uint_fast16_t upper = BUFFER - 1;
+	// clang-format off
+	for(; upper > 0 && data.B[upper] == 0; upper--);
+	// clang-format on
+	if(upper < n) {
+		// wir deleten einfach; Garkein problem bruder;
+		for(int i = 0; i <= upper; i++) data.B[i] = 0;
+		return;
 	}
-	for(int i = 0; i < n; i++) data.B[i] = 0;
+	for(int i = 0; i <= upper - n; i++) {
+		data.B[i] = data.B[i + n];
+	}
+	for(int i = upper - n + 1; i <= upper; i++) data.B[i] = 0;
 }
-
 
 mp mp::operator*(const unsigned long long K) const {
 	mp out(*this);
