@@ -6,7 +6,7 @@
 #include <string>
 // leftover idee? anstatt immer zu rechenen 2 arrays haben
 
-#define BUFFER 10
+#define BUFFER 20
 
 
 /*** Idee:
@@ -76,7 +76,7 @@ public:
 
 
 	mp& operator/=(const mp& K);
-	// mp operator/(const mp& K) const;
+	mp operator/(const mp& K) const;
 
 
 
@@ -114,7 +114,10 @@ private:
 
 	inline void stepR32(uint16_t n);
 	inline void stepR64(uint16_t n);
-	
+
+	uint16_t findBitSize(uint16_t &index_start);
+	void setBit(uint32_t pos);
+
 	double div32(const uint32_t K, const int32_t index);
 	
 	void clear();
@@ -157,3 +160,5 @@ void mp::initfromMPI(const mp& K) {
 		data.B[i] = K.data.B[i];
 	}
 }
+
+#include "annoningerrortobechangedlater.cpp"
