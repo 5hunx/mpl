@@ -533,6 +533,8 @@ mp& mp::operator/=(const mp& K) {
         return *this;
 	}
 	if(operator==(K)) {
+		clear();
+		data.B[0] = 1;
 		return *this;
 	}
 
@@ -595,3 +597,94 @@ mp mp::operator/(const mp& K) const {
 	out /= K;
 	return out;
 }
+
+
+// std::string mp::toString() const {
+// 	constexpr double log2_10 = 3.3219280948874;
+// 	std::string out, last_it, nullen;
+// 	mp tosub(*this), subtracktor;
+// 	uint16_t index_start = BUFFER - 1;
+// 	double len = (double) tosub.findBitSize(index_start);
+// 	if(len == 0) return "0";
+// 	uint32_t remove0, remove0old = 0;
+// 	if(len >= 64) {
+// 		remove0old = (int) (len/log2_10);
+// 	} else {
+// 		remove0old = 0;
+// 	}
+	
+// 	mp z, n;
+// 	while(len != 0) {
+// 		remove0 = 0;
+// 		// 9 weil sind ja 8.25 pos pro 10
+		
+// 		if(len >= 64) {
+// 			remove0old = (int) (len/log2_10);
+// 			len -= (int)log2_10;
+// 		}
+// 		n = 1;
+// 		for(int i = 0; i < remove0; i++) n *= 10;
+// 		for(int i = 0; i < remove0old - remove0 - last_it.size(); i++) {
+// 			nullen += '0';
+// 		}
+// 		z = tosub;
+// 		z /= n;
+// 		out += nullen + last_it;
+// 		last_it = std::to_string(z.data.B[0]);
+// 		z *= n;
+// 		tosub -= z;
+// 		len = tosub.findBitSize(index_start);
+// 		remove0old = remove0;
+// 		nullen.clear();
+// 	}
+// 	out += last_it;
+
+// 	return out;
+// } 
+
+bool mp::isBitInUnreadable() const {
+	for(int i = 1; i < BUFFER - 1; i++) {
+		if(data.B[i] != 0) return true;
+	}
+	return false;
+}
+
+std::string mp::toString() const {
+	if(!isBitInUnreadable()) {
+		return std::to_string(data.B[0]);
+	}
+	
+	// neuer ansatzt => scheiß auf effizienz
+	uint32_t dec_stellen = 0;
+	mp temp(*this), subtractor(*this);
+	for(;temp != 0; temp /= 10) dec_stellen++;
+	std::string out, holder;
+	out.reserve(dec_stellen);
+	holder.reserve(19);
+
+	// first case
+	uint16_t over19 = dec_stellen % 19;
+	if(over19 != 0) {
+		temp = *this;
+		for(uint16_t i = 0; i < dec_stellen - over19; i++) temp /= 10;
+		out += std::to_string(temp.data.B[0]);
+		for(uint16_t i = 0; i < dec_stellen - over19; i++) temp *= 10;
+		subtractor -= temp;
+		dec_stellen -= over19;
+	}
+	
+	// subsequent
+	uint16_t count_div;
+	for(; dec_stellen > 0; dec_stellen -= 19) {
+		temp = subtractor;
+		count_div = 0;
+		for(;temp.isBitInUnreadable() || temp.data.B[0] >= 10000000000000000000ULL; count_div++) temp /= 10;
+		holder = std::to_string(temp.data.B[0]);
+		out += std::string(19 - holder.size(), '0') + holder;
+		// calling mult only once is a lot faster...
+		for(int i = 0; i < count_div; i++) temp *= 10;
+		subtractor -= temp;
+	}
+
+	return out;	
+} 

@@ -82,6 +82,10 @@ public:
 
 	bool operator==(const unsigned long long K) const;
 	bool operator==(const mp& K) const;
+
+	bool operator!=(const unsigned long long K) const {
+		return !operator==(K);
+	};
 	
 	bool operator>(const unsigned long long K) const;
 	bool operator<(const unsigned long long K) const;
@@ -90,6 +94,7 @@ public:
 	bool operator<(const mp& K) const;
 
 	// void printBin();
+	std::string toString() const;
 	std::string getBinString() const;
 	std::string getSimpleDecString() const;
 
@@ -114,6 +119,8 @@ private:
 
 	inline void stepR32(uint16_t n);
 	inline void stepR64(uint16_t n);
+
+	bool isBitInUnreadable() const;
 
 	uint16_t findBitSize(uint16_t &index_start);
 	void setBit(uint32_t pos);
