@@ -2,7 +2,6 @@
 
 #include <stdint.h>
 
-#include <iostream>
 #include <string>
 // leftover idee? anstatt immer zu rechenen 2 arrays haben
 
@@ -14,12 +13,6 @@
  * Mult und Div opti -> bitlänge bis zur ersten 1 finden
  * erstmal nur unsigned
  */
-
-typedef struct {
-	uint64_t mantisse:52;
-	uint16_t exponent:11;        
-	uint8_t sign:1;
-} DoubleFucker;
 
 class mp {
 public:
@@ -106,6 +99,8 @@ public:
 
 	unsigned long getBitSize();
 
+	void initFormBinaryString(std::string K); 
+
 
 private:
 	inline uint32_t findFirst1();
@@ -143,13 +138,13 @@ void mp::initfromString(const std::string& K) {
 	constexpr uint64_t batch = 10000000000000000000ULL;
 	uint32_t i = K.size() % 19;
 	if(i != 0) {
-		uint64_t insert = std::stoll(K.substr(0, i));
+		uint64_t insert = std::stoull(K.substr(0, i));
 		data.B[0] += insert;
 	}
 
 	for(; (i + 18) < K.size(); i += 19) {
 		operator*=(batch);
-		uint64_t insert = std::stoll(K.substr(i, 19));
+		uint64_t insert = std::stoull(K.substr(i, 19));
 		operator+=(insert);
 	}
 }
@@ -163,5 +158,22 @@ void mp::initfromMPI(const mp& K) {
 		data.B[i] = K.data.B[i];
 	}
 }
+
+void mp::initFormBinaryString(std::string K) {
+	for(int32_t i = 0; i < K.size(); i++) {
+		if(K[i] == '1') {
+			setBit(K.size() - i - 1);
+		}
+	}
+}
+
+// Kommt noch irgendwann
+// void mp::initFormHexString(std::string K) {
+// 	for(int32_t i = 0; i < K.size(); i++) {
+// 		if(K[i] == '1') {
+// 			setBit(K.size() - i - 1);
+// 		}
+// 	}
+// }
 
 #include "annoningerrortobechangedlater.cpp"

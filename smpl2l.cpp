@@ -571,7 +571,8 @@ std::string mp::toString() const {
 		count_div = 0;
 		for(;temp.isBitInUnreadable() || temp.data.B[0] >= 10000000000000000000ULL; count_div++) temp /= 10;
 		holder = std::to_string(temp.data.B[0]);
-		out += std::string(19 - holder.size(), '0') + holder;
+		if(19 - holder.size() != 0) out += std::string(19 - holder.size(), '0');  // adds zeros only if needed (doesnt happen often) 
+		out += holder;
 		// calling mult only once is a lot faster...
 		for(int i = 0; i < count_div; i++) temp *= 10;
 		subtractor -= temp;
