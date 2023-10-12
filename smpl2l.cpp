@@ -1,9 +1,5 @@
 #include <string>
 #include <bitset>
-#include <intrin.h>
-// #pragma intrinsic(_BitScanForward64)
-// geht nicht benutzt gcc
-
 
 #include "smpl2l.hpp"
 
@@ -85,18 +81,6 @@ mp mp::operator-(const mp& K) {
 	out -= K;
 	return out;
 }
-
-// void mp::printBin() {
-// 	for(int i = 0; i < BUFFER; i++) std::cout << data[i] << " ";
-// 	std::cout << ":\n";
-// 	for(int i = 3; i >= 0; i--) {
-// 		if(data[i] != 0) {
-// 			std::cout << std::bitset<64>(data[i]);
-// 		}
-// 	}
-// 	std::cout << "\n";
-// }
-
 
 
 bool mp::operator==(const unsigned long long K) const {
@@ -305,18 +289,6 @@ mp& mp::operator*=(const unsigned long long K) {
 	return *this;
 }
 
-// inline uint32_t mp::findFirst1() {
-// 	unsigned long out = 0;
-// 	for(int i = 0; i < BUFFER; i++) {
-// 		if(data.B[i] != 0) {
-// 			out += __builtin_ffsll(data.B[i]);
-// 			break;
-// 		}
-// 		out += 64;
-// 	}
-
-// 	return out;
-// }
 
 void mp::mult32(uint32_t K) {
 	uint16_t shift = 0;
@@ -460,44 +432,6 @@ mp mp::operator*(const mp& K) const {
 }
 
 
-
-// void incExpDouble(double &K, uint16_t val) {
-//     // constexpr uint16_t maskExp = 0b0111111111110000,
-//     //                 maskExpInv = 0b1000000000001111;   
-    
-//     // uint16_t* EXP_P = (uint16_t*)(&K)+3;
-//     // uint16_t D = *EXP_P & maskExp; 
-//     // val<<=4;
-//     // D += val;
-//     // // D &= maskExp;
-//     // *EXP_P &= maskExpInv;
-//     // *EXP_P |= D;
-    
-
-//     // same stuff aber bisl langsamer (aber zumidest lesbar SKULL EMOJI)
-//     // DoubleFucker* b = reinterpret_cast<DoubleFucker*>(&K);
-
-//     // b->exponent += val;
-// }
-
-// DIVISION
-
-// double mp::div32(const uint32_t K, const int32_t index) {
-//     const double D = (double)K;
-//     double S = 0;
-
-// 	for(int i = 0; i < BUFFER*2; i++) {
-//         if(data.M[i] == 0) continue;
-//         S += data.M[i] / D;
-// 	}
-
-// 	return S;
-// }
-
-
-
-// inline uint16_t getPos
-
 mp& mp::operator/=(const unsigned long long K) {
 	return operator/=(mp(K));
 }
@@ -598,49 +532,6 @@ mp mp::operator/(const mp& K) const {
 	return out;
 }
 
-
-// std::string mp::toString() const {
-// 	constexpr double log2_10 = 3.3219280948874;
-// 	std::string out, last_it, nullen;
-// 	mp tosub(*this), subtracktor;
-// 	uint16_t index_start = BUFFER - 1;
-// 	double len = (double) tosub.findBitSize(index_start);
-// 	if(len == 0) return "0";
-// 	uint32_t remove0, remove0old = 0;
-// 	if(len >= 64) {
-// 		remove0old = (int) (len/log2_10);
-// 	} else {
-// 		remove0old = 0;
-// 	}
-	
-// 	mp z, n;
-// 	while(len != 0) {
-// 		remove0 = 0;
-// 		// 9 weil sind ja 8.25 pos pro 10
-		
-// 		if(len >= 64) {
-// 			remove0old = (int) (len/log2_10);
-// 			len -= (int)log2_10;
-// 		}
-// 		n = 1;
-// 		for(int i = 0; i < remove0; i++) n *= 10;
-// 		for(int i = 0; i < remove0old - remove0 - last_it.size(); i++) {
-// 			nullen += '0';
-// 		}
-// 		z = tosub;
-// 		z /= n;
-// 		out += nullen + last_it;
-// 		last_it = std::to_string(z.data.B[0]);
-// 		z *= n;
-// 		tosub -= z;
-// 		len = tosub.findBitSize(index_start);
-// 		remove0old = remove0;
-// 		nullen.clear();
-// 	}
-// 	out += last_it;
-
-// 	return out;
-// } 
 
 bool mp::isBitInUnreadable() const {
 	for(int i = 1; i < BUFFER - 1; i++) {

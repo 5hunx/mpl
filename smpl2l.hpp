@@ -101,10 +101,8 @@ public:
 	union ovfl {
 		uint64_t B[BUFFER];
 		uint32_t M[BUFFER * 2];
-		// uint32_t S[BUFFER*4];
 	} data = {0};
-	// bool negative = false; // ist erstmal nur unsigned irgendwo ist auch schluss 
-	// sollte aber wenn ich fertig bin einfach sein zu implementieren
+
 
 	unsigned long getBitSize();
 
@@ -124,8 +122,6 @@ private:
 
 	uint16_t findBitSize(uint16_t &index_start);
 	void setBit(uint32_t pos);
-
-	double div32(const uint32_t K, const int32_t index);
 	
 	void clear();
 
