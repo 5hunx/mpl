@@ -5,7 +5,7 @@
 #include <string>
 // leftover idee? anstatt immer zu rechenen 2 arrays haben
 
-#define BUFFER 20
+#define BUFFER 40
 
 
 /*** Idee:
@@ -125,7 +125,7 @@ private:
 	void initfromMPI(const mp& K);
 
 
-	void debugOut(std::string K, int l = 0) {
+	void debugOut(std::string K, int l = 0) const {
 		for(int i = 0; i < l; i++) std::cout << ' ';
 		std::cout << K << '\n';
 		for(int i = 0; i < l; i++) std::cout << ' ';
@@ -160,7 +160,7 @@ void mp::initfromMPI(const mp& K) {
 }
 
 void mp::initFormBinaryString(std::string K) {
-	for(int32_t i = 0; i < K.size(); i++) {
+	for(uint32_t i = 0; i < K.size(); i++) {
 		if(K[i] == '1') {
 			setBit(K.size() - i - 1);
 		}

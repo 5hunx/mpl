@@ -4,7 +4,9 @@
 #include "smpl2l.hpp"
 
 mp& mp::operator+=(const mp& K) {
+	if(K == 0) return *this;
 	for(uint_fast8_t i = 0; i < BUFFER; i++) {	// upper bound maybe nur bis 3??
+		if(K.data.B[i] == 0) continue;
 		data.B[i] += K.data.B[i];
 		if(data.B[i] < K.data.B[i]) {
 			uint_fast8_t index = i;
@@ -291,6 +293,10 @@ mp& mp::operator*=(const unsigned long long K) {
 
 
 void mp::mult32(uint32_t K) {
+	if(K == 0) {
+		clear();
+		return;
+	}
 	uint16_t shift = 0;
 	while(K % 2 == 0) {
 		shift++;
@@ -319,7 +325,7 @@ void mp::mult32(uint32_t K) {
 }
 
 void mp::stepL32(uint16_t n) {
-	uint_fast16_t upper = BUFFER * 2 - 1;
+	uint_fast16_t upper = BUFFER * 2 - 1 - n;
 
 	if(n >= upper) {
 		clear();
@@ -327,16 +333,16 @@ void mp::stepL32(uint16_t n) {
 	}
 
 	// clang-format off
-	for(; upper > 0 && data.M[upper] != 0; upper--);
+	for(; upper > 0 && data.M[upper] == 0; upper--);
 	// clang-format on
-	for(int i = upper + 1; i >= n; i--) {
+	for(int i = upper + n; i >= n; i--) {
 		data.M[i] = data.M[i - n];
 	}
 	for(int i = 0; i < n; i++) data.M[i] = 0;
 }
 
 void mp::stepL64(uint16_t n) {
-	uint_fast16_t upper = BUFFER - 1;
+	uint_fast16_t upper = BUFFER - 1 - n;
     
 	if(n >= upper) {
 		clear();
@@ -344,9 +350,9 @@ void mp::stepL64(uint16_t n) {
 	}
 
 	// clang-format off
-	for(; upper > 0 && data.B[upper] != 0; upper--);
+	for(; upper > 0 && data.B[upper] == 0; upper--);
     // clang-format on
-	for(int i = upper + 1; i >= n; i--) {
+	for(int i = upper + n; i >= n; i--) {
 		data.B[i] = data.B[i - n];
 	}
 	for(int i = 0; i < n; i++) data.B[i] = 0;
@@ -405,7 +411,6 @@ mp& mp::operator*=(const mp& K) {
 	// bitshift magic here  no divide tho :(
 
 	mp adder, temp;
-
 	if(K.data.B[0] != 0) {
 		temp = *this;
 		temp.operator*=(K.data.B[0]);
@@ -474,7 +479,6 @@ mp& mp::operator/=(const mp& K) {
 
 	mp nenner(K), adder;
 	// bitshift as far as possible and then check for NENNER == 1
-
 	uint16_t BitstartZ = findFirst1(), BitstartN = nenner.findFirst1(),
 			smallest = (BitstartZ < BitstartN) ? BitstartZ : BitstartN; 
 
@@ -563,20 +567,30 @@ std::string mp::toString() const {
 		subtractor -= temp;
 		dec_stellen -= over19;
 	}
+	if(dec_stellen == 0) return out;
 	
+	dec_stellen /= 19;
+
 	// subsequent
-	uint16_t count_div;
-	for(; dec_stellen > 0; dec_stellen -= 19) {
+	mp divider;
+	for(uint32_t i = 1; i < dec_stellen; i++) {
 		temp = subtractor;
-		count_div = 0;
-		for(;temp.isBitInUnreadable() || temp.data.B[0] >= 10000000000000000000ULL; count_div++) temp /= 10;
+		divider.data.B[0] = 10000000000000000000ULL;
+		for(uint32_t n = 1; n < dec_stellen - i; n++) divider *= 10000000000000000000ULL;
+		temp /= divider;
 		holder = std::to_string(temp.data.B[0]);
 		if(19 - holder.size() != 0) out += std::string(19 - holder.size(), '0');  // adds zeros only if needed (doesnt happen often) 
 		out += holder;
 		// calling mult only once is a lot faster...
-		for(int i = 0; i < count_div; i++) temp *= 10;
+		temp *= divider;
 		subtractor -= temp;
+		divider.clear();
 	}
+
+	// last
+	holder = std::to_string(subtractor.data.B[0]);
+	if(19 - holder.size() != 0) out += std::string(19 - holder.size(), '0');  // adds zeros only if needed (doesnt happen often) 
+	out += holder;	
 
 	return out;	
 } 
