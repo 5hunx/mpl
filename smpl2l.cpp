@@ -1,5 +1,4 @@
 #include <string>
-#include <bitset>
 
 #include "smpl2l.hpp"
 

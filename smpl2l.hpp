@@ -125,12 +125,12 @@ private:
 	void initfromMPI(const mp& K);
 
 
-	void debugOut(std::string K, int l = 0) const {
-		for(int i = 0; i < l; i++) std::cout << ' ';
-		std::cout << K << '\n';
-		for(int i = 0; i < l; i++) std::cout << ' ';
-		std::cout << getBinString() << '\n';
-	};
+	// void debugOut(std::string K, int l = 0) const {
+	// 	for(int i = 0; i < l; i++) std::cout << ' ';
+	// 	std::cout << K << '\n';
+	// 	for(int i = 0; i < l; i++) std::cout << ' ';
+	// 	std::cout << getBinString() << '\n';
+	// };
 };
 
 
