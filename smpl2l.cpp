@@ -66,11 +66,11 @@ mp& mp::operator-=(const mp& K) {
 	for(int i = 0; i < BUFFER; i++) {
 		if(data.B[i] < K.data.B[i]) {
 			int big_index = i + 1;
-			for(; big_index < BUFFER && data.B[big_index] == 0; big_index++) {
+			for(; big_index < BUFFER - 1 && data.B[big_index] == 0; big_index++) {
 				data.B[big_index] = UINT64_MAX;
 			}
 			data.B[big_index]--;
-		} 
+		}
 		data.B[i] -= K.data.B[i];
 	}
 
@@ -324,12 +324,12 @@ void mp::mult32(uint32_t K) {
 }
 
 void mp::stepL32(uint16_t n) {
-	uint_fast16_t upper = BUFFER * 2 - 1 - n;
-
-	if(n >= upper) {
+	if(n >= BUFFER * 2) {
 		clear();
 		return;
 	}
+
+	uint_fast16_t upper = BUFFER * 2 - 1 - n;
 
 	// clang-format off
 	for(; upper > 0 && data.M[upper] == 0; upper--);
@@ -341,12 +341,12 @@ void mp::stepL32(uint16_t n) {
 }
 
 void mp::stepL64(uint16_t n) {
-	uint_fast16_t upper = BUFFER - 1 - n;
-    
-	if(n >= upper) {
+	if(n >= BUFFER) {
 		clear();
 		return;
 	}
+    
+	uint_fast16_t upper = BUFFER - 1 - n;
 
 	// clang-format off
 	for(; upper > 0 && data.B[upper] == 0; upper--);
