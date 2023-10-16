@@ -1,18 +1,17 @@
-#include <string>
-
 #include "smpl2l.hpp"
+
+#include <string>
 
 mp& mp::operator+=(const mp& K) {
 	if(K == 0) return *this;
 	for(uint_fast8_t i = 0; i < BUFFER; i++) {	// upper bound maybe nur bis 3??
 		if(K.data.B[i] == 0) continue;
 		data.B[i] += K.data.B[i];
-		if(data.B[i] < K.data.B[i]) {
-			uint_fast8_t index = i;
-			do {
-				index++;
+		if(data.B[i] < K.data.B[i] && i + 1 < BUFFER) {
+			data.B[i + 1]++;
+			for(uint_fast8_t index = i + 2; index < BUFFER && data.B[index - 1] == 0; index++) {
 				data.B[index]++;
-			} while(index < BUFFER && data.B[index] == 0);
+			}
 		}
 	}
 
@@ -51,7 +50,7 @@ mp& mp::operator-=(const unsigned long long K) {
 			data.B[big_index] = UINT64_MAX;
 		}
 		data.B[big_index]--;
-	} 
+	}
 	data.B[0] -= K;
 
 	return *this;
@@ -99,7 +98,6 @@ bool mp::operator==(const mp& K) const {
 }
 
 
-
 bool mp::operator>(const unsigned long long K) const {
 	if(data.B[0] > K) return true;
 	for(int i = 1; i < BUFFER; i++) {
@@ -133,7 +131,7 @@ unsigned long mp::getBitSize() {
 	uint8_t index = BUFFER - 1, pos = 0;
 	while(index < BUFFER && data.B[index] == 0) index--;
 	for(unsigned long long m = 1ULL << (64 - 1); m > 0 && !(m & data.B[index]); m /= 2) pos++;
-	
+
 	return (index + 1) * 64 - pos;
 }
 
@@ -144,7 +142,7 @@ std::string mp::getBinString() const {
 	while(index < BUFFER && data.B[index] == 0 && index != 0) index--;
 	for(unsigned long long m = 1ULL << (64 - 1); m > 0 && !(m & data.B[index]); m /= 2) pos++;
 	uint32_t len = (index + 1) * 64 - pos;
-	if(len  == 0) return "0";
+	if(len == 0) return "0";
 	std::string out;
 	out.reserve(len);  // später schauen ob ich 500 iq habe (ich habe 500 iq)
 
@@ -169,12 +167,12 @@ void mp::clear() {
 }
 
 
-//MULTIPLICATION
+// MULTIPLICATION
 
 
 mp& mp::operator<<=(const unsigned K) {
 	if(K == 0) return *this;
-	if(K >= BUFFER*64) {
+	if(K >= BUFFER * 64) {
 		clear();
 		return *this;
 	}
@@ -192,8 +190,8 @@ mp& mp::operator<<=(const unsigned K) {
 	if(G != 0) {
 		const unsigned offset = 64 - G;
 		uint_fast64_t buff, buff_old = 0;
-		for(int i = 0; i < BUFFER; i++) {  // evtl opti wenn BUFFER-1 und lastcase hinter for
-			if(data.B[i] == 0 && buff_old == 0) {		   // die mit den nullen muss ich ja nicht ändern
+		for(int i = 0; i < BUFFER; i++) {		   // evtl opti wenn BUFFER-1 und lastcase hinter for
+			if(data.B[i] == 0 && buff_old == 0) {  // die mit den nullen muss ich ja nicht ändern
 				buff_old = 0;
 				continue;
 			}
@@ -215,7 +213,7 @@ mp mp::operator<<(const unsigned K) {
 
 mp& mp::operator>>=(const unsigned K) {
 	if(K == 0) return *this;
-	if(K >= BUFFER*64) {
+	if(K >= BUFFER * 64) {
 		clear();
 		return *this;
 	}
@@ -233,8 +231,8 @@ mp& mp::operator>>=(const unsigned K) {
 	if(G != 0) {
 		const unsigned offset = 64 - G;
 		uint_fast64_t buff, buff_old = 0;
-		for(int i = BUFFER - 1; i >= 0; i--) {  // evtl opti wenn BUFFER-1 und lastcase hinter for
-			if(data.B[i] == 0 && buff_old == 0) {		   // die mit den nullen muss ich ja nicht ändern
+		for(int i = BUFFER - 1; i >= 0; i--) {	   // evtl opti wenn BUFFER-1 und lastcase hinter for
+			if(data.B[i] == 0 && buff_old == 0) {  // die mit den nullen muss ich ja nicht ändern
 				buff_old = 0;
 				continue;
 			}
@@ -268,20 +266,18 @@ mp& mp::operator*=(const unsigned long long K) {
 	} vals = {K};
 
 
-
 	if(vals.S[1] == 0) {  // for u32 faster
 		mult32(vals.S[0]);
 		return *this;
 	}
 
-    
 
 	mp temp(*this);
-    mult32(vals.S[0]);
+	mult32(vals.S[0]);
 	temp.mult32(vals.S[1]);
 	temp.stepL32(1);
-	
-    // EVTL NICHT alle sondern nur die bis jetzt beschriebenen ändern
+
+	// EVTL NICHT alle sondern nur die bis jetzt beschriebenen ändern
 	// temp<<=32;
 
 	operator+=(temp);
@@ -304,7 +300,6 @@ void mp::mult32(uint32_t K) {
 	if(shift != 0) operator<<=(shift);
 
 
-
 	if(K != 1) {
 		mp adder;
 		union {
@@ -319,7 +314,7 @@ void mp::mult32(uint32_t K) {
 		}
 
 		data.M[BUFFER * 2 - 1] *= K;
-        operator+=(adder);
+		operator+=(adder);
 	}
 }
 
@@ -345,12 +340,12 @@ void mp::stepL64(uint16_t n) {
 		clear();
 		return;
 	}
-    
+
 	uint_fast16_t upper = BUFFER - 1 - n;
 
 	// clang-format off
 	for(; upper > 0 && data.B[upper] == 0; upper--);
-    // clang-format on
+	// clang-format on
 	for(int i = upper + n; i >= n; i--) {
 		data.B[i] = data.B[i - n];
 	}
@@ -441,13 +436,13 @@ mp& mp::operator/=(const unsigned long long K) {
 }
 
 mp mp::operator/(const unsigned long long K) const {
-    mp out(*this);
-    out /= mp(K);
-    return out;
+	mp out(*this);
+	out /= mp(K);
+	return out;
 }
 
 
-uint16_t mp::findBitSize(uint16_t &index_start) {
+uint16_t mp::findBitSize(uint16_t& index_start) {
 	uint8_t pos = 0;
 	while(index_start < BUFFER && data.B[index_start] == 0 && index_start != 0) index_start--;
 	for(unsigned long long m = 1ULL << (64 - 1); m > 0 && !(m & data.B[index_start]); m /= 2) {
@@ -459,16 +454,15 @@ uint16_t mp::findBitSize(uint16_t &index_start) {
 
 void mp::setBit(uint32_t pos) {
 	uint16_t arr = 0;
-	for(;pos >= 64; pos-=64) arr++;
+	for(; pos >= 64; pos -= 64) arr++;
 	data.B[arr] |= ((uint64_t)1 << pos);
 }
 
 
-
 mp& mp::operator/=(const mp& K) {
-    if(operator<(K)) {
-        clear();
-        return *this;
+	if(operator<(K)) {
+		clear();
+		return *this;
 	}
 	if(operator==(K)) {
 		clear();
@@ -479,15 +473,15 @@ mp& mp::operator/=(const mp& K) {
 	mp nenner(K), adder;
 	// bitshift as far as possible and then check for NENNER == 1
 	uint16_t BitstartZ = findFirst1(), BitstartN = nenner.findFirst1(),
-			smallest = (BitstartZ < BitstartN) ? BitstartZ : BitstartN; 
+			 smallest = (BitstartZ < BitstartN) ? BitstartZ : BitstartN;
 
 	if(smallest != 0) {
-		nenner>>=smallest;
+		nenner >>= smallest;
 		operator>>=(smallest);
 	}
 
 	if(nenner == 1) {
-        return *this;
+		return *this;
 	}
 
 	uint32_t BIT_Z;
@@ -498,11 +492,11 @@ mp& mp::operator/=(const mp& K) {
 	BIT_Z = findBitSize(index_Z);
 
 	int32_t current_bit = BIT_Z - BIT_N;
-	nenner<<= current_bit;
+	nenner <<= current_bit;
 	BIT_N = BIT_Z;
 
 	if(operator<(nenner)) {
-		nenner>>=1;
+		nenner >>= 1;
 		current_bit--;
 		BIT_N--;
 	}
@@ -513,12 +507,12 @@ mp& mp::operator/=(const mp& K) {
 
 		BIT_Z = findBitSize(index_Z);
 		if(BIT_Z == 0) break;
-		nenner>>= BIT_N - BIT_Z;
+		nenner >>= BIT_N - BIT_Z;
 		current_bit -= BIT_N - BIT_Z;
 		BIT_N = BIT_Z;
 
 		if(operator<(nenner)) {
-			nenner>>=1;
+			nenner >>= 1;
 			current_bit--;
 			BIT_N--;
 		}
@@ -526,7 +520,7 @@ mp& mp::operator/=(const mp& K) {
 
 	operator=(adder);
 
-    return *this;
+	return *this;
 }
 
 mp mp::operator/(const mp& K) const {
@@ -547,11 +541,11 @@ std::string mp::toString() const {
 	if(!isBitInUnreadable()) {
 		return std::to_string(data.B[0]);
 	}
-	
+
 	// neuer ansatzt => scheiß auf effizienz
 	uint32_t dec_stellen = 0;
 	mp temp(*this), subtractor(*this);
-	for(;temp != 0; temp /= 10) dec_stellen++;
+	for(; temp != 0; temp /= 10) dec_stellen++;
 	std::string out, holder;
 	out.reserve(dec_stellen);
 	holder.reserve(19);
@@ -567,7 +561,7 @@ std::string mp::toString() const {
 		dec_stellen -= over19;
 	}
 	if(dec_stellen == 0) return out;
-	
+
 	dec_stellen /= 19;
 
 	// subsequent
@@ -578,7 +572,8 @@ std::string mp::toString() const {
 		for(uint32_t n = 1; n < dec_stellen - i; n++) divider *= 10000000000000000000ULL;
 		temp /= divider;
 		holder = std::to_string(temp.data.B[0]);
-		if(19 - holder.size() != 0) out += std::string(19 - holder.size(), '0');  // adds zeros only if needed (doesnt happen often) 
+		if(19 - holder.size() != 0)
+			out += std::string(19 - holder.size(), '0');  // adds zeros only if needed (doesnt happen often)
 		out += holder;
 		// calling mult only once is a lot faster...
 		temp *= divider;
@@ -588,8 +583,9 @@ std::string mp::toString() const {
 
 	// last
 	holder = std::to_string(subtractor.data.B[0]);
-	if(19 - holder.size() != 0) out += std::string(19 - holder.size(), '0');  // adds zeros only if needed (doesnt happen often) 
-	out += holder;	
+	if(19 - holder.size() != 0)
+		out += std::string(19 - holder.size(), '0');  // adds zeros only if needed (doesnt happen often)
+	out += holder;
 
-	return out;	
-} 
+	return out;
+}

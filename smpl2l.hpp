@@ -160,6 +160,7 @@ void mp::initfromMPI(const mp& K) {
 }
 
 void mp::initFormBinaryString(std::string K) {
+	if(K.size() > BUFFER * 64) return; // dont write in memory lol 
 	for(uint32_t i = 0; i < K.size(); i++) {
 		if(K[i] == '1') {
 			setBit(K.size() - i - 1);
